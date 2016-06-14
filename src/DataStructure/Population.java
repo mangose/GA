@@ -29,6 +29,7 @@ public class Population {
     private Convolution mBestConvolution;
     private Selection mSelection;
     private int mGeneration = 0;
+    private int mHammingDistance = 0;
 
     public int getmGeneration() {
         return mGeneration;
@@ -151,21 +152,59 @@ public class Population {
 
     }
 
-    private int getAvergageHammingDistance() {
+    private void setAvergageHammingDistance() {
 
         int totalHammingDistance = 0;
+        int totalCompares = 0;
 
         for (int i = 0; i < mCandidates.size(); i++) {
             for (int j = i + 1; j < mCandidates.size(); j++) {
                 totalHammingDistance += getHammingDistance(mCandidates.get(i),mCandidates.get(j));
+                totalCompares++;
             }
         }
-        return totalHammingDistance / mCandidates.size();
+        this.mHammingDistance = totalHammingDistance / totalCompares;
     }
 
     private int getHammingDistance(Convolution a, Convolution b) {
-        return 1;
+
+        int hammingDistance = 0;
+
+        for (int i = 0; i < mSequence.size(); i++) {
+            switch (a.getOrientations().get(i)) {
+                case LEFT:
+                    if(b.getOrientations().get(i) == Convolution.Orientation.LEFT) {
+                        hammingDistance += 0;
+                    } else if (b.getOrientations().get(i) == Convolution.Orientation.STRAIGHT) {
+                        hammingDistance += 1;
+                    } else {
+                        hammingDistance += 2;
+                    }
+                    break;
+                case STRAIGHT:
+                    if(b.getOrientations().get(i) == Convolution.Orientation.STRAIGHT) {
+                        hammingDistance += 0;
+                    } else {
+                        hammingDistance += 1;
+                    }
+                    break;
+                case RIGHT:
+                    if(b.getOrientations().get(i) == Convolution.Orientation.LEFT) {
+                        hammingDistance += 2;
+                    } else if (b.getOrientations().get(i) == Convolution.Orientation.STRAIGHT) {
+                        hammingDistance += 1;
+                    } else {
+                        hammingDistance += 0;
+                    }
+                    break;
+
+            }
+        }
+        return hammingDistance;
+
     }
+
+    public int getHammingDistance() { return  mHammingDistance; }
 
     public Convolution getBestConvolution() {
         return mBestConvolution;
@@ -183,8 +222,10 @@ public class Population {
 
     public static void main(String[] args) {
 
-        String seq = "110101010111101000100010000100010001011110101010111101010101111010001000100001000100010111101010101111010101011110100010001000010001000101111010101011110101010111101000100010000100010001011110101010111101010101111010001000100001000100010111101010101111010101011110100010001000010001000101111010101011";
+        String seq = "110101010111101000100010000100010001011110101010111101010101111011010101011110100010001000010001000101111010101011110101010111101101010101111010001000100001000100010111101010101111010101011110";
+        final String SEQ156 = "000000000001001111111111100111111111110011111111111001111111111100111111111110011111111111001111111111100111111111110011111111111001111111111100100000000000";
         Population myPop;
+        boolean print = false;
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Please choose a selection strategy\n\t[1] Proportion Based Selection\n\t[2] Tournament Selection");
@@ -196,15 +237,15 @@ public class Population {
         }
         switch (i) {
             case 1:
-                myPop = new Population(seq, new ProportionBasedSelection());
+                myPop = new Population(SEQ156, new ProportionBasedSelection());
                 System.out.println("Proportion Based Selection has been chosen!");
                 break;
             case 2:
-                myPop = new Population(seq, new TournamentSelection());
+                myPop = new Population(SEQ156, new TournamentSelection());
                 System.out.println("Tournament Selection has been chosen!");
                 break;
             default:
-                myPop = new Population(seq, new ProportionBasedSelection());
+                myPop = new Population(SEQ156, new ProportionBasedSelection());
                 System.out.println("Invalid Input - Proportion Based Selection has been chosen!");
                 break;
         }
@@ -227,19 +268,25 @@ public class Population {
         myPop.evaluate();
         Log.addtext("Zeit;MaxFitness\n");
 
-
+        //ConvolutionDrawer cd = new ConvolutionDrawer(myPop.getBestConvolution());
+        //BetterDrawer bd = new BetterDrawer(myPop.getBestConvolution());
 
         long time = System.currentTimeMillis();
         long duration = 0;
-        while (/*myPop.getBestConvolution().getmPairs() < 16  && generation < maxGenerations*/duration < 180) {
-
+        while (/*myPop.getBestConvolution().getmPairs() < 16  && generation < maxGenerations*/duration < 72) {
             myPop.selection();
             myPop.crossover(crossoverRate);
             myPop.mutation(mutationRate);
             myPop.evaluate();
+            //myPop.setAvergageHammingDistance();
 
-            System.out.println("Generation: " + myPop.getmGeneration());
-            myPop.printBestConvolution();
+
+            if(print) {
+                System.out.println("Generation: " + myPop.getmGeneration());
+                System.out.println("- Average Hamming-Distance: " + myPop.getHammingDistance());
+                myPop.printBestConvolution();
+            }
+
             myPop.setmGeneration(myPop.getmGeneration() + 1);
 
             Log.addtext(myPop.getmGeneration() + ";" + String.format("%,4f",myPop.getBestConvolution().getFitness()) + "\n");
@@ -247,10 +294,25 @@ public class Population {
 
         }
 
-        new ConvolutionDrawer(myPop.getBestConvolution());
+        System.out.println("Generation: " + myPop.getmGeneration());
+        //System.out.println("\t- Average Hamming-Distance: " + myPop.getHammingDistance());
+        myPop.printBestConvolution();
+        System.out.println("Total time: " + ((System.currentTimeMillis() - time) / 1000) + "s");
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        myPop.getBestConvolution().setNeedRecalc(true);
+        myPop.getBestConvolution().calculateFitness();
+
+        BetterDrawer bd = new BetterDrawer(myPop.getBestConvolution());
+        bd.repaint();
+
         //new BetterDrawer(myPop.getBestConvolution());
 
-        System.out.println("Total time: " + ((System.currentTimeMillis() - time) / 1000) + "s");
+
         try {
             Log.export();
         } catch (IOException ioe) {

@@ -20,7 +20,7 @@ public class BetterDrawer extends JFrame implements ActionListener {
     private Convolution bestConvolution;
 
     public BetterDrawer(Convolution cs) {
-        super("ZOOM");
+        super("Convolution Drawer");
         this.bestConvolution = cs;
 
 
@@ -98,7 +98,7 @@ public class BetterDrawer extends JFrame implements ActionListener {
             int height = 0;
             int xLastPos = xOffset;
             int yLastPos = yOffset;
-            int lineOffset = (int)(10 * factor) / 2;
+            int lineOffset = (int)(20 * factor) / 2;
             DataStructure.Point p;
             Convolution toDraw = bestConvolution;
             ArrayList<DataStructure.Point> coords = toDraw.getCoords();
@@ -108,11 +108,12 @@ public class BetterDrawer extends JFrame implements ActionListener {
                 p = coords.get(i);
                 xPos = (int)(p.x() * factor * 20) + xOffset;
                 yPos = (int)(p.y() * factor * 20) + yOffset;
-                width = (int)(10 * factor);
-                height = (int)(10 * factor);
+                width = (int)(20 * factor);
+                height = (int)(20 * factor);
 
                 g.setColor(Color.BLACK);
-                g.drawLine(xPos , yPos, xLastPos, yLastPos);
+                g.drawLine(xPos - (lineOffset / 2), yPos - (lineOffset / 2), xLastPos - (lineOffset / 2), yLastPos - (lineOffset / 2));
+
 
                 if (toDraw.getPopulation().getSequence().get(i)) {
                     g.setColor(Color.RED);
